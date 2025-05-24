@@ -1,54 +1,106 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="zalo-platform-site-verification" content="VVY5TVlxB70BvVids-WXAXptWWRmWLHTDJSt" />
   <meta charset="UTF-8">
-  <title>Đặt lịch</title>
-  <script src="https://sp.zalo.me/plugins/sdk.js"></script>
+  <title>Đặt lịch cho khách</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; padding: 1rem; }
+    label { display: block; margin-top: 1rem; }
+    select, input, button {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      margin-top: 1rem;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-  <h3>Đặt lịch làm việc</h3>
-  <form id="form">
-    <input type="text" id="employee" placeholder="Nhân viên"><br>
-    <input type="text" id="customer" placeholder="Khách hàng"><br>
-    <input type="date" id="date"><br>
-    <input type="time" id="time"><br>
-    <button type="submit">Đặt lịch</button>
+
+  <h2>🧑‍💼 Đặt lịch cho khách hàng</h2>
+
+  <form id="booking-form">
+    <label for="customer">Khách hàng</label>
+    <select id="customer" required>
+      <option value="">-- Chọn khách hàng --</option>
+    </select>
+
+    <label for="type">Loại buổi</label>
+    <select id="type" required>
+      <option value="HLV cá nhân">HLV cá nhân</option>
+      <option value="HLV miễn phí">HLV miễn phí</option>
+    </select>
+
+    <label for="date">Ngày</label>
+    <input type="date" id="date" required>
+
+    <label for="time">Giờ</label>
+    <input type="time" id="time" required>
+
+    <button type="submit">📩 Gửi lịch</button>
   </form>
 
   <script>
-    let zaloUserId = "";
+    // TODO: lấy thông tin nhân viên từ Zalo userId
+    const staffId = "demo_staff";
 
-    window.onload = function () {
-      // Lấy thông tin người dùng từ Zalo
-      if (window.ZaloSocialSDK) {
-        ZaloSocialSDK.getLoginStatus(function (response) {
-          if (response.status === 'connected') {
-            zaloUserId = response.userId;
-          }
-        });
+    async function fetchCustomers() {
+      const res = await fetch(`https://script.google.com/macros/s/AKfycbzwxGR2zcEXTQFEeOSwPK4w7XkKZaXgKKOMBcBUGYxo0d8m28zvO1DxYlnJ2zgwkLm-1Q/exec`);
+      const data = await res.json();
+      const select = document.getElementById("customer");
+      data.forEach(customer => {
+        const option = document.createElement("option");
+        option.value = customer.id;
+        option.text = customer.name;
+        select.appendChild(option);
+      });
+    }
+
+    document.getElementById("booking-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const customerId = document.getElementById("customer").value;
+      const type = document.getElementById("type").value;
+      const date = document.getElementById("date").value;
+      const time = document.getElementById("time").value;
+
+      if (!customerId || !date || !time) {
+        alert("Vui lòng điền đầy đủ thông tin.");
+        return;
       }
 
-      document.getElementById('form').addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        const data = {
-          employee: document.getElementById('employee').value,
-          customer: document.getElementById('customer').value,
-          date: document.getElementById('date').value,
-          time: document.getElementById('time').value,
-          zaloId: zaloUserId
-        };
-
-        fetch('https://script.google.com/macros/s/AKfycbzpA5jFmjWDqG8-GKvOBOX4clHlFJ4KAfDgBPt7VHfa0uZkNv6lqacyHKylCnUgwAiEyA/exec', {
-          method: 'POST',
-          body: JSON.stringify(data),
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }).then(res => res.text()).then(alert);
+      const res = await fetch(`https://script.google.com/macros/s/AKfycbzwxGR2zcEXTQFEeOSwPK4w7XkKZaXgKKOMBcBUGYxo0d8m28zvO1DxYlnJ2zgwkLm-1Q/exec`, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "create_booking",
+          staffId,
+          customerId,
+          type,
+          date,
+          time
+        }),
+        headers: {
+          "Content-Type": "application/json"
+        }
       });
-    };
+
+      const result = await res.json();
+      if (result.success) {
+        alert("✅ Đặt lịch thành công!");
+        document.getElementById("booking-form").reset();
+      } else {
+        alert("❌ Có lỗi xảy ra khi đặt lịch.");
+      }
+    });
+
+    fetchCustomers();
   </script>
 </body>
 </html>
